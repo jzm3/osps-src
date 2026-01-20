@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSPS-SRC 管理员审批</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .navbar {
+            background: #fff;
+            border-bottom: 1px solid #e5e6eb;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .navbar-title {
+            font-size: 18px;
+            color: #0F3B99;
+        }
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-title {
+            font-size: 18px;
+            color: #1D2129;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e6eb;
+        }
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+        .table th, .table td {
+            padding: 12px;
+            border: 1px solid #e5e6eb;
+            text-align: left;
+            font-size: 14px;
+        }
+        .table th {
+            background: #f5f7fa;
+            font-weight: 500;
+        }
+        .btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 4px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+        .btn-approve {
+            background: #00B42A;
+            color: #fff;
+        }
+        .btn-reject {
+            background: #F53F3F;
+            color: #fff;
+            margin-left: 8px;
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e6eb;
+            border-radius: 4px;
+        }
+        .btn-submit {
+            padding: 12px 24px;
+            background: #0F3B99;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: #F53F3F;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+        .back-btn {
+            display: inline-block;
+            margin-bottom: 16px;
+            color: #0F3B99;
+            text-decoration: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 管理员登录区域 -->
+    <div id="adminLoginSection">
+        <div class="container">
+            <div class="card login-form">
+                <a href="index.html" class="back-btn">← 返回首页</a>
+                <h3 class="card-title">管理员登录（SHA512验证）</h3>
+                <div class="form-group">
+                    <label class="form-label">许可证号（明文）</label>
+                    <input type="text" class="form-input" id="licenseCode" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">管理员密码（明文）</label>
+                    <input type="password" class="form-input" id="adminPwd" required>
+                    <div class="error" id="loginError"></div>
+                </div>
+                <button class="btn-submit" onclick="adminLogin()">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 管理员审批区域 -->
+    <div id="adminSection" class="hidden">
+        <nav class="navbar">
+            <div class="navbar-title">OSPS-SRC 管理员审批中心</div>
+            <button class="btn-submit" style="float: right;" onclick="adminLogout()">退出登录</button>
+        </nav>
+        <div class="container">
+            <a href="index.html" class="back-btn">← 返回首页</a>
+            
+            <!-- 漏洞审批卡片 -->
+            <div class="card">
+                <h3 class="card-title">漏洞提交审批</h3>
+                <table class="table" id="vulnTable">
+                    <thead>
+                        <tr>
+                            <th>提交时间</th>
+                            <th>漏洞名称</th>
+                            <th>漏洞类型</th>
+                            <th>漏洞描述</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+
+            <!-- 存档问题审批卡片 -->
+            <div class="card">
+                <h3 class="card-title">存档问题审批</h3>
+                <table class="table" id="archiveTable">
+                    <thead>
+                        <tr>
+                            <th>提交时间</th>
+                            <th>问题类型</th>
+                            <th>问题描述</th>
+                            <th>操作</th>
+                        </tr>
+                    </thead>
+                    <tbody></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // 核心：SHA512加密函数（标准实现）
+        async function sha512Encrypt(str) {
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(str);
+                const hashBuffer = await crypto.subtle.digest('SHA-512', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                // 转为大写十六进制字符串（符合你提供的哈希格式）
+                return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+            } catch (error) {
+                console.error("SHA512加密失败：", error);
+                return "";
+            }
+        }
+
+        // 读取TXT文件
+        async function readTxtFile(path) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) return [];
+                const text = await response.text();
+                return text.split('\n').filter(line => line.trim());
+            } catch (error) {
+                console.error("读取文件失败：", error);
+                return [];
+            }
+        }
+
+        // 管理员登录（SHA512加密验证）
+        async function adminLogin() {
+            const licensePlain = document.getElementById('licenseCode').value.trim();
+            const pwdPlain = document.getElementById('adminPwd').value.trim();
+            const loginError = document.getElementById('loginError');
+
+            // 清空错误提示
+            loginError.style.display = 'none';
+
+            // 基础校验
+            if (!licensePlain || !pwdPlain) {
+                loginError.textContent = "许可证号和密码不能为空！";
+                loginError.style.display = 'block';
+                return;
+            }
+
+            // 1. 对输入的明文进行SHA512加密
+            const licenseHash = await sha512Encrypt(licensePlain);
+            const pwdHash = await sha512Encrypt(pwdPlain);
+            if (!licenseHash || !pwdHash) {
+                loginError.textContent = "加密失败，请刷新页面重试！";
+                loginError.style.display = 'block';
+                return;
+            }
+
+            // 2. 读取lpass.txt（格式：许可证SHA512|密码SHA512）
+            const adminList = await readTxtFile('data/lpass.txt');
+            
+            // 3. 匹配加密后的哈希（不接触明文）
+            const isAuth = adminList.some(line => {
+                const [licHash, pHash] = line.split('|');
+                // 严格匹配哈希（去除可能的空格）
+                return licHash.trim() === licenseHash && pHash.trim() === pwdHash;
+            });
+
+            if (isAuth) {
+                // 登录成功
+                localStorage.setItem('osps-src-admin', 'authed');
+                document.getElementById('adminLoginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('hidden');
+                loadApprovalData();
+            } else {
+                loginError.textContent = "许可证号或密码错误！";
+                loginError.style.display = 'block';
+            }
+        }
+
+        // 管理员退出
+        function adminLogout() {
+            localStorage.removeItem('osps-src-admin');
+            document.getElementById('adminSection').classList.add('hidden');
+            document.getElementById('adminLoginSection').classList.remove('hidden');
+            // 清空登录表单
+            document.getElementById('licenseCode').value = '';
+            document.getElementById('adminPwd').value = '';
+        }
+
+        // 加载审批数据
+        async function loadApprovalData() {
+            // 加载漏洞数据
+            const vulns = await readTxtFile('data/vulnerabilities.txt');
+            const vulnTable = document.getElementById('vulnTable').querySelector('tbody');
+            vulnTable.innerHTML = '';
+            
+            if (vulns.length === 0) {
+                vulnTable.innerHTML = '<tr><td colspan="5" style="text-align:center;">暂无漏洞提交数据</td></tr>';
+            } else {
+                vulns.forEach(vuln => {
+                    const [time, name, type, desc] = vuln.split('|');
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${time}</td>
+                        <td>${name}</td>
+                        <td>${type}</td>
+                        <td>${desc}</td>
+                        <td>
+                            <button class="btn btn-approve" onclick="approveItem('vuln', this)">通过</button>
+                            <button class="btn btn-reject" onclick="rejectItem('vuln', this)">驳回</button>
+                        </td>
+                    `;
+                    vulnTable.appendChild(row);
+                });
+            }
+
+            // 加载存档问题数据
+            const issues = await readTxtFile('data/archive_issues.txt');
+            const archiveTable = document.getElementById('archiveTable').querySelector('tbody');
+            archiveTable.innerHTML = '';
+            
+            if (issues.length === 0) {
+                archiveTable.innerHTML = '<tr><td colspan="4" style="text-align:center;">暂无存档问题提交数据</td></tr>';
+            } else {
+                issues.forEach(issue => {
+                    const [time, type, desc] = issue.split('|');
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${time}</td>
+                        <td>${type}</td>
+                        <td>${desc}</td>
+                        <td>
+                            <button class="btn btn-approve" onclick="approveItem('archive', this)">通过</button>
+                            <button class="btn btn-reject" onclick="rejectItem('archive', this)">驳回</button>
+                        </td>
+                    `;
+                    archiveTable.appendChild(row);
+                });
+            }
+        }
+
+        // 审批通过
+        function approveItem(type, btn) {
+            const row = btn.closest('tr');
+            row.style.opacity = 0.5;
+            alert(`已通过${type === 'vuln' ? '漏洞' : '存档问题'}提交！`);
+        }
+
+        // 审批驳回
+        function rejectItem(type, btn) {
+            const row = btn.closest('tr');
+            row.style.opacity = 0.5;
+            alert(`已驳回${type === 'vuln' ? '漏洞' : '存档问题'}提交！`);
+        }
+
+        // 页面加载时检查登录状态
+        window.onload = () => {
+            if (localStorage.getItem('osps-src-admin')) {
+                document.getElementById('adminLoginSection').classList.add('hidden');
+                document.getElementById('adminSection').classList.remove('hidden');
+                loadApprovalData();
+            }
+        };
+    </script>
+</body>
+</html>
