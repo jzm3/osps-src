@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSPS-SRC 注册</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+        .container {
+            width: 100%;
+            max-width: 500px;
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            padding: 32px;
+        }
+        .title {
+            text-align: center;
+            font-size: 22px;
+            color: #165DFF;
+            margin-bottom: 24px;
+        }
+        .tab-group {
+            display: flex;
+            margin-bottom: 24px;
+            border-bottom: 1px solid #e5e6eb;
+        }
+        .tab {
+            padding: 12px 0;
+            flex: 1;
+            text-align: center;
+            cursor: pointer;
+            font-size: 16px;
+            color: #86909C;
+            border-bottom: 2px solid transparent;
+        }
+        .tab.active {
+            color: #165DFF;
+            border-bottom-color: #165DFF;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #1D2129;
+        }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e6eb;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #165DFF;
+        }
+        .btn-submit {
+            width: 100%;
+            padding: 12px;
+            background: #165DFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        .btn-submit:hover {
+            opacity: 0.9;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: #F53F3F;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2 class="title">OSPS-SRC 账号注册</h2>
+        <div class="tab-group">
+            <div class="tab active" onclick="switchTab('user')">普通用户注册</div>
+            <div class="tab" onclick="switchTab('admin')">管理员注册</div>
+        </div>
+
+        <!-- 普通用户注册表单 -->
+        <form id="userForm">
+            <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input type="text" class="form-input" id="userUsername" required>
+                <div class="error" id="userUserError"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <input type="password" class="form-input" id="userPassword" required>
+                <div class="error" id="userPwdError"></div>
+            </div>
+            <button type="submit" class="btn-submit">注册普通用户</button>
+        </form>
+
+        <!-- 管理员注册表单（默认隐藏） -->
+        <form id="adminForm" class="hidden">
+            <div class="form-group">
+                <label class="form-label">用户名</label>
+                <input type="text" class="form-input" id="adminUsername" required>
+                <div class="error" id="adminUserError"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">密码</label>
+                <input type="password" class="form-input" id="adminPassword" required>
+                <div class="error" id="adminPwdError"></div>
+            </div>
+            <div class="form-group">
+                <label class="form-label">OSPS许可证号（明文）</label>
+                <input type="text" class="form-input" id="licenseCode" required>
+                <div class="error" id="licenseError"></div>
+            </div>
+            <button type="submit" class="btn-submit">注册管理员</button>
+        </form>
+    </div>
+
+    <script>
+        // 切换注册标签
+        function switchTab(type) {
+            const userTab = document.querySelector('.tab:nth-child(1)');
+            const adminTab = document.querySelector('.tab:nth-child(2)');
+            const userForm = document.getElementById('userForm');
+            const adminForm = document.getElementById('adminForm');
+            
+            if (type === 'user') {
+                userTab.classList.add('active');
+                adminTab.classList.remove('active');
+                userForm.classList.remove('hidden');
+                adminForm.classList.add('hidden');
+            } else {
+                userTab.classList.remove('active');
+                adminTab.classList.add('active');
+                userForm.classList.add('hidden');
+                adminForm.classList.remove('hidden');
+            }
+        }
+
+        // SHA512加密函数
+        async function sha512Encrypt(str) {
+            try {
+                const encoder = new TextEncoder();
+                const data = encoder.encode(str);
+                const hashBuffer = await crypto.subtle.digest('SHA-512', data);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+            } catch (error) {
+                console.error("SHA512加密失败：", error);
+                return "";
+            }
+        }
+
+        // 读取TXT文件（通用）
+        async function readTxtFile(path) {
+            try {
+                const response = await fetch(path);
+                if (!response.ok) return [];
+                const text = await response.text();
+                return text.split('\n').filter(line => line.trim());
+            } catch (error) {
+                console.error("读取文件失败：", error);
+                return [];
+            }
+        }
+
+        // 写入TXT文件（模拟后端逻辑，实际需后端接口）
+        async function writeTxtFile(path, content) {
+            // 实际项目替换为后端接口调用
+            console.log(`[模拟写入${path}]`, content);
+            // 本地调试用：更新内存中的文件内容（实际后端需操作物理文件）
+            return true;
+        }
+
+        // 更新许可证状态（核心修正：标记为已使用）
+        async function updateLicenseStatus(licenseHash) {
+            const licenseLines = await readTxtFile('data/lpass.txt');
+            const newLicenseLines = licenseLines.map(line => {
+                const [hash, status] = line.split('|');
+                if (hash === licenseHash && status === 'unused') {
+                    return `${hash}|used`; // 标记为已注册，不可复用
+                }
+                return line;
+            });
+            await writeTxtFile('data/lpass.txt', newLicenseLines.join('\n'));
+        }
+
+        // 普通用户注册（无修改）
+        document.getElementById('userForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('userUsername').value.trim();
+            const password = document.getElementById('userPassword').value.trim();
+            const userError = document.getElementById('userUserError');
+            const pwdError = document.getElementById('userPwdError');
+
+            // 清空错误提示
+            userError.style.display = 'none';
+            pwdError.style.display = 'none';
+
+            if (!username) {
+                userError.textContent = "用户名不能为空";
+                userError.style.display = 'block';
+                return;
+            }
+            if (password.length < 6) {
+                pwdError.textContent = "密码长度不能少于6位";
+                pwdError.style.display = 'block';
+                return;
+            }
+
+            // 加密用户名和密码
+            const userHash = await sha512Encrypt(username);
+            const pwdHash = await sha512Encrypt(password);
+            if (!userHash || !pwdHash) {
+                alert("加密失败，请刷新页面重试");
+                return;
+            }
+            
+            // 写入users.txt
+            const existingUsers = await readTxtFile('data/users.txt');
+            // 防重复注册
+            if (existingUsers.some(line => line.startsWith(`${userHash}|`))) {
+                userError.textContent = "用户名已存在";
+                userError.style.display = 'block';
+                return;
+            }
+            existingUsers.push(`${userHash}|${pwdHash}`);
+            await writeTxtFile('data/users.txt', existingUsers.join('\n'));
+            
+            alert("普通用户注册成功！请返回登录页登录");
+            window.location.href = 'index.html';
+        });
+
+        // 管理员注册（核心修正）
+        document.getElementById('adminForm').addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const username = document.getElementById('adminUsername').value.trim();
+            const password = document.getElementById('adminPassword').value.trim();
+            const licensePlain = document.getElementById('licenseCode').value.trim();
+            const licenseError = document.getElementById('licenseError');
+            const adminUserError = document.getElementById('adminUserError');
+
+            // 清空错误提示
+            licenseError.style.display = 'none';
+            adminUserError.style.display = 'none';
+
+            // 基础校验
+            if (!username) {
+                adminUserError.textContent = "用户名不能为空";
+                adminUserError.style.display = 'block';
+                return;
+            }
+            if (password.length < 6) {
+                licenseError.textContent = "密码长度不能少于6位";
+                licenseError.style.display = 'block';
+                return;
+            }
+            if (!licensePlain) {
+                licenseError.textContent = "许可证号不能为空";
+                licenseError.style.display = 'block';
+                return;
+            }
+
+            // 1. 加密用户输入的明文许可证号
+            const licenseHash = await sha512Encrypt(licensePlain);
+            if (!licenseHash) {
+                licenseError.textContent = "许可证号加密失败";
+                licenseError.style.display = 'block';
+                return;
+            }
+
+            // 2. 读取lpass.txt，验证许可证哈希是否存在且未使用
+            const licenseLines = await readTxtFile('data/lpass.txt');
+            let isValidLicense = false;
+            let isUnused = false;
+            for (const line of licenseLines) {
+                const [hash, status] = line.split('|');
+                if (hash === licenseHash) {
+                    isValidLicense = true;
+                    isUnused = (status === 'unused');
+                    break;
+                }
+            }
+
+            // 3. 许可证校验结果
+            if (!isValidLicense) {
+                licenseError.textContent = "无效的许可证号";
+                licenseError.style.display = 'block';
+                return;
+            }
+            if (!isUnused) {
+                licenseError.textContent = "该许可证号已被注册，不可复用";
+                licenseError.style.display = 'block';
+                return;
+            }
+
+            // 4. 加密用户名和密码
+            const userHash = await sha512Encrypt(username);
+            const pwdHash = await sha512Encrypt(password);
+            if (!userHash || !pwdHash) {
+                alert("加密失败，请刷新页面重试");
+                return;
+            }
+
+            // 5. 防重复注册（用户名）
+            const existingAdmins = await readTxtFile('data/admins.txt');
+            if (existingAdmins.some(line => line.startsWith(`${userHash}|`))) {
+                adminUserError.textContent = "管理员用户名已存在";
+                adminUserError.style.display = 'block';
+                return;
+            }
+
+            // 6. 写入管理员数据（用户名哈希|密码哈希|许可证哈希）
+            existingAdmins.push(`${userHash}|${pwdHash}|${licenseHash}`);
+            await writeTxtFile('data/admins.txt', existingAdmins.join('\n'));
+
+            // 7. 标记许可证为已使用（核心：不可再次注册）
+            await updateLicenseStatus(licenseHash);
+
+            alert("管理员账号注册成功！请返回登录页登录");
+            window.location.href = 'index.html';
+        });
+    </script>
+</body>
+</html>

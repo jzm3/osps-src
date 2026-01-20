@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OSPS-SRC 普通用户</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", sans-serif;
+        }
+        body {
+            background: #f5f7fa;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .navbar {
+            background: #fff;
+            border-bottom: 1px solid #e5e6eb;
+            padding: 16px;
+            margin-bottom: 24px;
+        }
+        .navbar-title {
+            font-size: 18px;
+            color: #165DFF;
+        }
+        .container {
+            width: 100%;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        .card {
+            background: #fff;
+            border-radius: 8px;
+            box-shadow: 0 2px 12px rgba(0,0,0,0.1);
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+        .card-title {
+            font-size: 18px;
+            color: #1D2129;
+            margin-bottom: 16px;
+            padding-bottom: 8px;
+            border-bottom: 1px solid #e5e6eb;
+        }
+        .form-group {
+            margin-bottom: 16px;
+        }
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-size: 14px;
+            color: #1D2129;
+        }
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e6eb;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+        .btn-submit {
+            padding: 12px 24px;
+            background: #165DFF;
+            color: #fff;
+            border: none;
+            border-radius: 4px;
+            font-size: 14px;
+            cursor: pointer;
+        }
+        .btn-submit:hover {
+            opacity: 0.9;
+        }
+        .login-form {
+            max-width: 400px;
+            margin: 0 auto;
+        }
+        .hidden {
+            display: none;
+        }
+        .error {
+            color: #F53F3F;
+            font-size: 12px;
+            margin-top: 4px;
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <!-- 登录区域 -->
+    <div id="loginSection">
+        <div class="container">
+            <div class="card login-form">
+                <h3 class="card-title">普通用户登录</h3>
+                <div class="form-group">
+                    <label class="form-label">用户名</label>
+                    <input type="text" class="form-input" id="userLoginName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">密码</label>
+                    <input type="password" class="form-input" id="userLoginPwd" required>
+                    <div class="error" id="loginError"></div>
+                </div>
+                <button class="btn-submit" onclick="userLogin()">登录</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 提交区域（登录后显示） -->
+    <div id="submitSection" class="hidden">
+        <nav class="navbar">
+            <div class="navbar-title">OSPS-SRC 普通用户中心</div>
+            <button class="btn-submit" style="float: right;" onclick="userLogout()">退出登录</button>
+        </nav>
+        <div class="container">
+            <!-- 漏洞提交卡片 -->
+            <div class="card">
+                <h3 class="card-title">提交漏洞</h3>
+                <div class="form-group">
+                    <label class="form-label">漏洞名称</label>
+                    <input type="text" class="form-input" id="vulnName" required>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">漏洞类型</label>
+                    <select class="form-select" id="vulnType" required>
+                        <option value="">请选择漏洞类型</option>
+                        <optgroup label="移动客户端漏洞">
+                            <option value="Android">Android</option>
+                            <option value="IOS">IOS</option>
+                        </optgroup>
+                        <optgroup label="PC客户端漏洞">
+                            <option value="拒绝服务">拒绝服务</option>
+                            <option value="溢出">溢出</option>
+                        </optgroup>
+                        <optgroup label="服务器漏洞">
+                            <option value="CSRF">CSRF</option>
+                            <option value="XSS-存储型">存储型XSS</option>
+                            <option value="XSS-DOM型">基于DOM的XSS</option>
+                            <option value="SQL注入">SQL注入</option>
+                            <option value="逻辑漏洞">逻辑漏洞</option>
+                        </optgroup>
+                        <optgroup label="OWASP TOP10">
+                            <option value="失效的访问控制">失效的访问控制</option>
+                            <option value="加密机制失效">加密机制失效</option>
+                            <option value="注入">注入</option>
+                            <option value="不安全设计">不安全设计</option>
+                            <option value="安全配置错误">安全配置错误</option>
+                            <option value="自带缺陷和过时的组件">自带缺陷和过时的组件</option>
+                            <option value="身份识别和身份验证错误">身份识别和身份验证错误</option>
+                            <option value="软件和数据完整性故障">软件和数据完整性故障</option>
+                            <option value="安全日志和监控故障">安全日志和监控故障</option>
+                            <option value="服务器请求伪造">服务器请求伪造（SSRF）</option>
+                        </optgroup>
+                        <optgroup label="其他">
+                            <option value="默认分类">默认分类</option>
+                            <option value="隐私合规问题">隐私合规问题</option>
+                            <option value="APP">APP</option>
+                            <option value="小程序">小程序</option>
+                            <option value="公众号">公众号</option>
+                            <option value="威胁情报">威胁情报</option>
+                        </optgroup>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">漏洞描述</label>
+                    <textarea class="form-textarea" id="vulnDesc" required></textarea>
+                </div>
+                <button class="btn-submit" onclick="submitVulnerability()">提交漏洞</button>
+            </div>
+
+            <!-- 存档问题提交卡片 -->
+            <div class="card">
+                <h3 class="card-title">提交存档问题</h3>
+                <div class="form-group">
+                    <label class="form-label">问题类型</label>
+                    <select class="form-select" id="archiveType" required>
+                        <option value="">请选择问题类型</option>
+                        <option value="文档破损">文档破损</option>
+                        <option value="缺页">缺页</option>
+                        <option value="失窃">失窃</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">问题描述</label>
+                    <textarea class="form-textarea" id="archiveDesc" required></textarea>
+                </div>
+                <button class="btn-submit" onclick="submitArchiveIssue()">提交存档问题</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // SHA512加密函数
+        async function sha512Encrypt(str) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(str);
+            const hashBuffer = await crypto.subtle.digest('SHA-512', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(byte => byte.toString(16).padStart(2, '0')).join('').toUpperCase();
+        }
+
+        // 读取TXT文件
+        async function readTxtFile(path) {
+            const response = await fetch(path);
+            if (!response.ok) return [];
+            const text = await response.text();
+            return text.split('\n').filter(line => line.trim());
+        }
+
+        // 普通用户登录
+        async function userLogin() {
+            const username = document.getElementById('userLoginName').value.trim();
+            const password = document.getElementById('userLoginPwd').value.trim();
+            const loginError = document.getElementById('loginError');
+
+            if (!username || !password) {
+                loginError.textContent = "用户名或密码不能为空";
+                loginError.style.display = 'block';
+                return;
+            }
+
+            // 加密验证
+            const userHash = await sha512Encrypt(username);
+            const pwdHash = await sha512Encrypt(password);
+            const users = await readTxtFile('data/users.txt');
+            const isMatch = users.some(line => line === `${userHash}|${pwdHash}`);
+
+            if (isMatch) {
+                localStorage.setItem('osps-src-user', username);
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('submitSection').classList.remove('hidden');
+            } else {
+                loginError.textContent = "用户名或密码错误";
+                loginError.style.display = 'block';
+            }
+        }
+
+        // 普通用户退出
+        function userLogout() {
+            localStorage.removeItem('osps-src-user');
+            document.getElementById('submitSection').classList.add('hidden');
+            document.getElementById('loginSection').classList.remove('hidden');
+        }
+
+        // 提交漏洞
+        async function submitVulnerability() {
+            const name = document.getElementById('vulnName').value.trim();
+            const type = document.getElementById('vulnType').value;
+            const desc = document.getElementById('vulnDesc').value.trim();
+
+            if (!name || !type || !desc) {
+                alert("请填写完整漏洞信息");
+                return;
+            }
+
+            // 写入vulnerabilities.txt
+            const content = `[${new Date().toLocaleString()}]|${localStorage.getItem('osps-src-user')}|${name}|${type}|${desc}`;
+            const existingVulns = await readTxtFile('data/vulnerabilities.txt');
+            existingVulns.push(content);
+            // 实际需后端接口，这里模拟
+            console.log("提交漏洞：", content);
+            alert("漏洞提交成功，等待管理员审批");
+            document.getElementById('vulnName').value = '';
+            document.getElementById('vulnType').value = '';
+            document.getElementById('vulnDesc').value = '';
+        }
+
+        // 提交存档问题
+        async function submitArchiveIssue() {
+            const type = document.getElementById('archiveType').value;
+            const desc = document.getElementById('archiveDesc').value.trim();
+
+            if (!type || !desc) {
+                alert("请填写完整存档问题信息");
+                return;
+            }
+
+            // 写入archive_issues.txt
+            const content = `[${new Date().toLocaleString()}]|${localStorage.getItem('osps-src-user')}|${type}|${desc}`;
+            const existingIssues = await readTxtFile('data/archive_issues.txt');
+            existingIssues.push(content);
+            // 实际需后端接口，这里模拟
+            console.log("提交存档问题：", content);
+            alert("存档问题提交成功，等待管理员处理");
+            document.getElementById('archiveType').value = '';
+            document.getElementById('archiveDesc').value = '';
+        }
+
+        // 页面加载时检查登录状态
+        window.onload = () => {
+            if (localStorage.getItem('osps-src-user')) {
+                document.getElementById('loginSection').classList.add('hidden');
+                document.getElementById('submitSection').classList.remove('hidden');
+            }
+        };
+    </script>
+</body>
+</html>
